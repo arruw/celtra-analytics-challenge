@@ -24,11 +24,11 @@ DROP TABLE IF EXISTS `ad`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ad` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `id_campain` int(10) unsigned NOT NULL,
+  `id_campaign` int(10) unsigned NOT NULL,
   `name` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `id_campain` (`id_campain`),
-  CONSTRAINT `ad_ibfk_1` FOREIGN KEY (`id_campain`) REFERENCES `campaign` (`id`)
+  KEY `id_campaign` (`id_campaign`),
+  CONSTRAINT `ad_ibfk_1` FOREIGN KEY (`id_campaign`) REFERENCES `campaign` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -56,7 +56,7 @@ DROP TABLE IF EXISTS `impression`;
 CREATE TABLE `impression` (
   `id_ad` int(10) unsigned NOT NULL,
   `id_user` int(10) unsigned NOT NULL,
-  `date` date NOT NULL,
+  `date` datetime NOT NULL,
   `click` tinyint(3) unsigned zerofill NOT NULL,
   `touch` tinyint(3) unsigned zerofill NOT NULL,
   `pinch` tinyint(3) unsigned zerofill NOT NULL,
