@@ -6,4 +6,4 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY app.py /app/app.py
 
-CMD python /app/app.py
+ENTRYPOINT [ "python", "/app/app.py"]

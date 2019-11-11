@@ -1,5 +1,6 @@
 import mysql.connector
 import os
+import sys
 import random
 import datetime
 
@@ -39,42 +40,66 @@ def insertImpression(cursor: mysql.connector.cursor.MySQLCursor, params):
     cursor.execute(f"INSERT INTO `impression` VALUES (%s, %s, %s, %s, %s, %s, %s)", params)
     cursor.close()
 
+def insert(con: mysql.connector.connection.MySQLConnection, createCampaigns, createAds, createImpressions, days=1):
+    campaignNextId = getNextId(con.cursor(), "campaign")
+    adNextId = getNextId(con.cursor(), "ad")
+    
+    for i in range(days, 0, -1):
+        campaignStartId = campaignNextId
+        adStartId = adNextId
+
+        day = datetime.date.today() - datetime.timedelta(days=i-1)
+        print(f"Generating for date: {day}", flush=True)
+
+        print(f"\tGenerating {createCampaigns} campaigns...", flush=True)
+        for _ in range(createCampaigns):
+            insertCampaign(con.cursor(), (f"camp_{campaignNextId}", ))
+            insertAd(con.cursor(), (campaignNextId, f"ad_{adNextId}", ))
+            campaignNextId += 1
+            adNextId += 1
+        con.commit()
+
+        print(f"\tGenerating {createAds} ads...", flush=True)
+        for _ in range(createAds):
+            campaignId = random.randint(campaignStartId, campaignNextId - 1)
+            insertAd(con.cursor(), (campaignId, f"ad_{adNextId}"))
+            adNextId += 1
+        con.commit()
+
+        print(f"\tGenerating {createImpressions} impressions...", flush=True)
+        for _ in range(createImpressions):
+            tmpAdStartId = adStartId if random.randint(1,10) > 6 else 1
+            adId = random.randint(tmpAdStartId, adNextId - 1)
+            userId = random.randint(1, 10000)
+            date = datetime.datetime.combine(day, datetime.datetime.min.time()) + datetime.timedelta(seconds=random.randint(1, 86400))
+            touch = 0
+            pinch = 0
+            swipe = 0
+            click = 0
+            if random.randint(1, 10) > 8:
+                touch = random.randint(0,4)
+                pinch = random.randint(0,3)
+                swipe = random.randint(0,3)
+            
+                if random.randint(1, 10) > 5: 
+                    click = random.randint(0,2)
+            insertImpression(con.cursor(), (adId, userId, date, click, touch, pinch, swipe))
+        con.commit()
+
+    print("Done.", flush=True)
+
+
+
+
+
 con = connect()
 
-campaignNextId = getNextId(con.cursor(), "campaign")
-adNextId = getNextId(con.cursor(), "ad")
+createCampaigns = 20
+createAds = createCampaigns*3
+createImpressions = createAds*50
+days = 1
 
-print("Inserting campaigns...")
-for _ in range(10):
-    insertCampaign(con.cursor(), (f"camp_{campaignNextId}", ))
-    insertAd(con.cursor(), (campaignNextId, f"ad_{adNextId}", ))
-    campaignNextId += 1
-    adNextId += 1
-con.commit()
+if len(sys.argv) == 2:
+    days = int(sys.argv[1])
 
-print("Inserting ads...")
-for _ in range(20):
-    campaignId = random.randint(1, campaignNextId - 1)
-    insertAd(con.cursor(), (campaignId, f"ad_{adNextId}"))
-    adNextId += 1
-con.commit()
-
-print("Inserting impressions...")
-for _ in range(100):
-    adId = random.randint(1, adNextId - 1)
-    userId = random.randint(1, 10000)
-    date = datetime.datetime.now() - datetime.timedelta(minutes=random.randint(1, 60))
-    touch = 0
-    pinch = 0
-    swipe = 0
-    click = 0
-    if random.randint(1, 10) > 8:
-        touch = random.randint(0,4)
-        pinch = random.randint(0,3)
-        swipe = random.randint(0,3)
-    
-        if random.randint(1, 10) > 5: 
-            click = random.randint(0,2)
-    insertImpression(con.cursor(), (adId, userId, date, click, touch, pinch, swipe))
-con.commit()
-print("Done.")
+insert(con, createCampaigns, createAds, createImpressions, days)

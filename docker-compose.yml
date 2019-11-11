@@ -22,7 +22,7 @@ services:
   spark-master:
     image: bde2020/spark-master:2.4.1-hadoop2.7
     ports:
-      - 8080:8080
+      - 8081:8080
       - 7077:7077
     environment:
       - INIT_DAEMON_STEP=setup_spark
@@ -30,11 +30,17 @@ services:
   spark-worker:
     image: bde2020/spark-worker:2.4.1-hadoop2.7
     ports:
-      - 8081
+      - 8082
     depends_on:
       - spark-master
     environment:
       - SPARK_MASTER=spark://spark-master:7077
+
+  # grafana:
+  #   image: grafana/grafana:6.4.4
+  #   ports:
+  #     - 3000:3000
+    
 
   # spark-app:
   #   build: services/spark-driver
