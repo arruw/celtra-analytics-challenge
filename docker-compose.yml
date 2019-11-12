@@ -1,54 +1,17 @@
 version: '3.7'
 
 services:
-  db:
-    image: mysql:8
-    command: --default-authentication-plugin=mysql_native_password
-    restart: always
-    ports:
-      - 3306:3306
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?err}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:?err}
-    volumes:
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
-
-  # adminer:
-  #   image: adminer
-  #   restart: always
-  #   ports:
-  #     - 8080:8080
-
   spark-master:
-    image: bde2020/spark-master:2.4.1-hadoop2.7
+    image: bde2020/spark-master:2.4.4-hadoop2.7
     ports:
-      - 8081:8080
+      - 8080:8080
       - 7077:7077
     environment:
       - INIT_DAEMON_STEP=setup_spark
 
   spark-worker:
-    image: bde2020/spark-worker:2.4.1-hadoop2.7
-    ports:
-      - 8082
+    image: bde2020/spark-worker:2.4.4-hadoop2.7
     depends_on:
       - spark-master
     environment:
       - SPARK_MASTER=spark://spark-master:7077
-
-  # grafana:
-  #   image: grafana/grafana:6.4.4
-  #   ports:
-  #     - 3000:3000
-    
-
-  # spark-app:
-  #   build: services/spark-driver
-  #   depends_on:
-  #     - spark-master
-
-  # zeppelin:
-  #   image: apache/zeppelin:0.8.2
-  #   ports:
-  #     - 8081:8080
-  #   command: bin/zeppelin-daemon.sh start

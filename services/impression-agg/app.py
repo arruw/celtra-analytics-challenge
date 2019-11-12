@@ -1,58 +1,76 @@
-import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import explode
+from pyspark.sql.functions import split
+from pyspark.sql.types import StructType
+from pyspark.sql.types import TimestampType
+from pyspark.sql.types import LongType
+from pyspark.sql.types import IntegerType
 
-spark = pyspark.sql.SparkSession.builder.appName("test").getOrCreate()
-sc: pyspark.sql.SparkSession = spark.sparkContext
+spark = SparkSession \
+    .builder \
+    .appName("sandbox") \
+    .getOrCreate()
 
-campaignDF = spark.read.format("jdbc") \
-    .option("url", "jdbc:mysql://db:3306/ads") \
-    .option("dbtable", "ads.campaign") \
-    .option("user", "root") \
-    .option("password", "Password123!") \
+lines = spark \
+    .readStream \
+    .format("socket") \
+    .option("host", "localhost") \
+    .option("port", 9999) \
     .load()
 
-adDF = spark.read.format("jdbc") \
-    .option("url", "jdbc:mysql://db:3306/ads") \
-    .option("dbtable", "ads.ad") \
-    .option("user", "root") \
-    .option("password", "Password123!") \
-    .load()
+inputDF = lines.selectExpr( \
+    "cast(nvl(split(value, ' ')[0], current_timestamp()) as timestamp) as timestamp", \
+    "cast(nvl(split(value, ' ')[1], 0) as long) as userId", \
+    "cast(nvl(split(value, ' ')[2], 0) as long) as campaignId", \
+    "cast(nvl(split(value, ' ')[3], 0) as long) as adId", \
+    "cast(nvl(split(value, ' ')[4], 0) as long) as impression", \
+    "cast(nvl(split(value, ' ')[5], 0) as long) as click", \
+    "cast(nvl(split(value, ' ')[6], 0) as long) as touch", \
+    "cast(nvl(split(value, ' ')[7], 0) as long) as swipe", \
+    "cast(nvl(split(value, ' ')[8], 0) as long) as pinch")
 
-impressionDF = spark.read.format("jdbc") \
-    .option("url", "jdbc:mysql://db:3306/ads") \
-    .option("dbtable", "ads.impression") \
-    .option("user", "root") \
-    .option("password", "Password123!") \
-    .load()
+inputDF.printSchema()
 
-campaignDF.createTempView("campaign")
-adDF.createTempView("ad")
-impressionDF.createTempView("impression")
+# Generate running word count
+windowedCounts = inputDF \
+    .groupBy("campaignId", "adId") \
+    .count()
 
-aggDF = spark.sql("""
-    SELECT
-        DATE(i.date) AS `date`
-        ,c.id AS `campaign_id`
-        ,a.id AS `ad_id`
-        ,c.name AS `campaign_name`
-        ,a.name AS `ad_name`
-        ,COUNT(*) AS `impressions`
-        ,SUM(i.click)+SUM(i.swipe)+SUM(i.pinch)+SUM(i.touch) AS `interactions`
-        ,SUM(i.click) AS `clicks`
-        ,COUNT(DISTINCT i.id_user) AS `uniqueUsers`
-        ,SUM(i.swipe) AS `swipes`
-        ,SUM(i.pinch) AS `pinches`
-        ,SUM(i.touch) AS `touches`
-    FROM campaign AS c
-    INNER JOIN ad AS a ON a.id_campaign = c.id
-    INNER JOIN impression AS i ON i.id_ad = a.id
-    GROUP BY DATE(i.date), c.id, a.id, c.name, a.name""")
+query = windowedCounts \
+    .writeStream \
+    .outputMode("complete") \
+    .format("console") \
+    .start()
 
-aggDF.write.format("jdbc") \
-    .option("url", "jdbc:mysql://db:3306/ads") \
-    .option("dbtable", "ads.agg_daily") \
-    .option("user", "root") \
-    .option("password", "Password123!") \
-    .mode("overwrite") \
-    .save()
+query.awaitTermination()
 
-spark.stop()
+# def parse_to_pair(line: str):
+#     try:
+#         tokens = tuple(map(int, line.split(" ")))
+        
+#         key = (tokens[2], tokens[3])
+#         user = tokens[1]
+#         timestamp = tokens[0]
+#         metrics = {
+#             0: (user, 1, 0, 0, 0, 0), # impression
+#             1: (user, 0, 1, 0, 0, 0), # click
+#             2: (user, 0, 0, 1, 0, 0), # pinch
+#             3: (user, 0, 0, 0, 1, 0), # swipe
+#             4: (user, 0, 0, 0, 0, 1)  # touch
+#         }
+
+#         metric = metrics.get(tokens[4], metrics[0])[1:] # remove user data
+
+#         return [(key, metric)]
+#     except:
+#         return []
+
+
+# impressions = lines.flatMap(parse_to_pair)
+
+# impressionsAgg = impressions.reduceByKey(lambda a, b: tuple(sum(pair) for pair in zip(a, b)))
+
+# impressionsAgg.pprint()
+
+# ssc.start()
+# ssc.awaitTermination()
