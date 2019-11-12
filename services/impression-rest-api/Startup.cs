@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -7,10 +8,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MySql.Data.MySqlClient;
 
 namespace impression_rest_api
 {
@@ -26,8 +29,12 @@ namespace impression_rest_api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<AggDailyContext>(opts => opts.UseMySQL(Configuration.GetConnectionString("AggDaily")));
-            services.AddControllers();
+            services.AddTransient(sp => new MySqlConnection(Configuration.GetConnectionString("AggDaily")));
+            services.AddControllers()
+                .AddJsonOptions(opts => {
+                    opts.JsonSerializerOptions.IgnoreNullValues = true;
+                    opts.JsonSerializerOptions.WriteIndented = false;
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

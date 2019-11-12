@@ -5,39 +5,59 @@ using System.Threading.Tasks;
 using System.Data;
 using MySql.Data.MySqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace impression_rest_api
 {
+    [Table("agg_daily")]
     public class AggDaily
     {
-        public DateTime Date { get; set; }
+        [Column("date")]
+        public DateTime? Date { get; set; }
 
-        public long CampaignId { get; set; }
+        [Column("campaign_id")]
+        public uint? CampaignId { get; set; }
 
-        public long AdId { get; set; }
+        [Column("ad_id")]
+        public uint? AdId { get; set; }
         
+        [Column("campaign_name")]
         public string CampaignName { get; set; }
 
+        [Column("ad_name")]
         public string AdName { get; set; }
 
-        public long Impressions { get; set; }
+        [Column("impressions")]
+        public long? Impressions { get; set; }
 
-        public long Clicks { get; set; }
+        [Column("clicks")]
+        public long? Clicks { get; set; }
 
-        public long Swipes { get; set; }
+        [Column("swipes")]
+        public long? Swipes { get; set; }
 
-        public long Pinches { get; set; }
+        [Column("pinches")]
+        public long? Pinches { get; set; }
 
-        public long Touches { get; set; }
+        [Column("touches")]
+        public long? Touches { get; set; }
 
-        public long UniqueUsers { get; set; }
+        [Column("uniqueUsers")]
+        public long? UniqueUsers { get; set; }
 
-        public long Interactions { get; set; }
+        [Column("interactions")]
+        public long? Interactions { get; set; }
     }
 
     public class AggDailyContext : DbContext
     {
         public DbSet<AggDaily> AggDaily { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder) 
+        {
+            modelBuilder.Entity<AggDaily>()
+                .HasKey(x => new {x.Date, x.CampaignId, x.AdId});
+        }
 
         public AggDailyContext(DbContextOptions<AggDailyContext> options) : base(options) {}
     }
