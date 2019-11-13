@@ -1,6 +1,6 @@
 up:
 	docker volume create celtra_db
-	docker-compose up -d --build
+	docker-compose up -d
 
 scale:
 	docker-compose scale spark-worker=$(n)

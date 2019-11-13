@@ -24,8 +24,8 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: Password123!
-      MYSQL_DATABASE: ads
+      - MYSQL_ROOT_PASSWORD=Password123!
+      - MYSQL_DATABASE=ads
     volumes:
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - celtra_db:/var/lib/mysql
@@ -48,5 +48,3 @@ services:
     depends_on:
       - spark-worker
       - impressions-gen
-
-
