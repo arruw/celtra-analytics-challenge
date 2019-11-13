@@ -14,7 +14,7 @@ services:
       - INIT_DAEMON_STEP=setup_spark
 
   spark-worker:
-    image: bde2020/spark-worker:2.4.4-hadoop2.7
+    build: services/spark-worker
     depends_on:
       - spark-master
     environment:

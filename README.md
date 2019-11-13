@@ -15,5 +15,6 @@ Challenge description is located [here](https://gist.github.com/anzebrvar/6b1377
 ![arhitecture.drawop.png](resources/arhitecture.drawio.png)
 
 # TODOs
-- Implement REST API
+- Implement REST APIs
 - Add unit tests
+- Move hard coded configurations to environment variables
