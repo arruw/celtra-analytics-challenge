@@ -14,6 +14,23 @@ Challenge description is located [here](https://gist.github.com/anzebrvar/6b1377
 # Solution overview
 ![arhitecture.drawop.png](resources/arhitecture.drawio.png)
 
+# Demo APIs
+
+**Question 1: How many impressions were trafficked each day for each campaign?**
+```bash
+curl http://localhost:8080/api/campaigns/timeseries
+```
+
+**Question 2: How many impressions, interactions and swipes were trafficked for each ad in the specific campaign?**
+```bash
+curl http://localhost:8080/api/campaigns/1/ads
+```
+
+**Question 2: How many unique users and impressions were trafficked each day for each ad in the last 7 days?**
+```bash
+curl http://localhost:8080/api/campaigns/ads/lastweek
+```
+
 # TODOs
 - Implement REST APIs
 - Add unit tests

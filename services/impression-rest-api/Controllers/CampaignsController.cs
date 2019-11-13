@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 
@@ -22,108 +21,117 @@ namespace impression_rest_api.Controllers
         {
             _logger = logger;
             _con = connection;
+
+            _logger.LogInformation("Campaigns controller resolved...");
         }
 
-        [HttpGet]
-        public async Task<ActionResult<dynamic>> Get()
+        /// <summary>
+        /// 
+        /// </summary>
+        [HttpGet("ping")]
+        public async Task<ActionResult<Question1>> Ping()
         {
-            var data = await _con.QueryAsync("SELECT * FROM agg_daily");
+             _logger.LogInformation("Ping action resolved...");
+
+            return Ok("OK");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [HttpGet("timeseries")]
+        public async Task<ActionResult<Question1>> GetQuestion1()
+        {
+            _logger.LogInformation("Q1 action resolved...");
+
+            var data = await _con.QueryAsync<Question1>(@"
+                SELECT
+                    date AS Date
+                    ,id_campaign AS CampaignId
+                    ,SUM(impressions) AS Impressions
+                FROM agg_daily
+                GROUP BY date, id_campaign
+                ORDER BY date
+            ");
+
             return Ok(data);
         }
 
         /// <summary>
-        /// Campaigns timeseries data
+        /// 
         /// </summary>
-        /// <param name="m">Selected metrics, override default metrics</param>
-        [HttpGet("ts/{m?}")]
-        public async Task<ActionResult<AggDaily>> Get(string m = "campaignName,impressions,interactions,clicks,uniqueUsers")
+        [HttpGet("{id}/ads")]
+        public async Task<ActionResult<Question2>> GetQuestion2(uint id)
         {
-            return await Get(null, m);
+            _logger.LogInformation("Q2 action resolved...");
+
+            var data = await _con.QueryAsync<Question2>(@"
+                SELECT
+                    CONCAT(id_campaign, '-', id_ad) AS AdId
+                    ,SUM(impressions) AS Impressions
+                    ,SUM(interactions) AS Interactions
+                    ,SUM(swipes) AS Swipes
+                FROM agg_daily
+                WHERE id_campaign = @id
+                GROUP BY id_campaign, id_ad
+                ORDER BY id_campaign, id_ad
+            ", new { id });
+
+            return Ok(data);
         }
 
         /// <summary>
-        /// Campaign timeseries data
+        /// 
         /// </summary>
-        /// <param name="id">Campaign id</param>
-        /// <param name="m">Selected metrics, override default metrics</param>
-        [HttpGet("ts/{id:int}/{m?}")]
-        public async Task<ActionResult<AggDaily>> Get(uint? id, string m = "campaignName,impressions,interactions,clicks,uniqueUsers")
+        [HttpGet("ads/lastweek")]
+        public async Task<ActionResult<Question3>> GetQuestion3()
         {
-            var mc = m.Split(',');
+            _logger.LogInformation("Q3 action resolved...");
 
-            var query = @$"SELECT * FROM agg_daily";
-            var data = await _con.QueryAsync(query);
+            var data = await _con.QueryAsync<Question3>(@"
+                SELECT
+					date AS Date
+                    ,CONCAT(id_campaign, '-', id_ad) AS AdId
+                    ,impressions AS Impressions
+                    ,uniqueUsers AS UniqueUsers
+                FROM agg_daily
+                WHERE date >= DATE_SUB(CURDATE(), INTERVAL 1 WEEK)
+                ORDER BY date
+            ");
 
-            // if(id.HasValue)
-            //     query = query.Where(x => x.CampaignId == id);
-
-            // var data = await query
-            //     .GroupBy(x => x.Date)
-            //     .OrderBy(x => x.Key)
-            //     .ToListAsync();
-
-            // var d = data.Select(x => new AggDaily
-            //     {
-            //         Date = x.First().Date,
-            //         CampaignId = x.First().CampaignId,
-                    
-            //         CampaignName =  mc.Contains("campaignName") ? x.First().CampaignName        : null,
-            //         Impressions =   mc.Contains("impressions") ? x.Sum(y => y.Impressions)      : null,
-            //         Interactions =  mc.Contains("interactions") ? x.Sum(y => y.Interactions)    : null,
-            //         Clicks =        mc.Contains("clicks") ? x.Sum(y => y.Clicks)                : null,
-            //         UniqueUsers =   mc.Contains("uniqueUsers") ? x.Sum(y => y.UniqueUsers)      : null,
-
-            //         Pinches =       mc.Contains("pinches") ? x.Sum(y => y.Pinches)              : null,
-            //         Touches =       mc.Contains("touches") ? x.Sum(y => y.Touches)              : null,
-            //         Swipes =        mc.Contains("swipes") ? x.Sum(y => y.Swipes)                : null,
-            //     })
-            //     .ToList();
-
-            // return Ok(d);
-
-            return null;
+            return Ok(data);
         }
+    }
 
-        // /// <summary>
-        // /// Campaign overview
-        // /// </summary>
-        // /// <param name="id">Campaign id</param>
-        // [HttpGet("{id:int}/overview")]
-        // public async Task<ActionResult<AggDaily>> GetOverview(uint id)
-        // {
-        //     throw new NotImplementedException("TODO");
-        // }
 
-        // /// <summary>
-        // /// Campaign ads totals
-        // /// </summary>
-        // /// <param name="id">Campaign id</param>
-        // /// <param name="m">Selected metrics, override default metrics</param>
-        // [HttpGet("{id:int}/overview/ads/{m?}")]
-        // public async Task<ActionResult<AggDaily>> GetOverviewAds(uint id, string m = "campaignName,adName,impressions,interactions,clicks,uniqueUsers")
-        // {
-        //     var mc = m.Split(',');
+    public class Question1
+    {
+        public DateTime Date { get; set; }
 
-        //     var data = await _aggDaily
-        //         .Where(x => x.CampaignId == id)
-        //         .GroupBy(x => x.AdId)
-        //         .Select(x => new AggDaily
-        //         {
-        //             AdId = x.First().AdId,
-                    
-        //             AdName =        mc.Contains("adName") ? x.First().AdName                    : null,
-        //             Impressions =   mc.Contains("impressions") ? x.Sum(y => y.Impressions)      : null,
-        //             Interactions =  mc.Contains("interactions") ? x.Sum(y => y.Interactions)    : null,
-        //             Clicks =        mc.Contains("clicks") ? x.Sum(y => y.Clicks)                : null,
-        //             UniqueUsers =   mc.Contains("uniqueUsers") ? x.Sum(y => y.UniqueUsers)      : null,
+        public string CampaignId { get; set; }
 
-        //             Pinches =       mc.Contains("pinches") ? x.Sum(y => y.Pinches)              : null,
-        //             Touches =       mc.Contains("touches") ? x.Sum(y => y.Touches)              : null,
-        //             Swipes =        mc.Contains("swipes") ? x.Sum(y => y.Swipes)                : null,
-        //         })
-        //         .ToListAsync();
+        public long Impressions { get; set; }
+    }
 
-        //     return Ok(data);
-        // }
+    public class Question2
+    {
+        public string AdId { get; set; }
+
+        public long Impressions { get; set; }
+
+        public long Interactions { get; set; }
+
+        public long Swipes { get; set; }
+    }
+
+    public class Question3
+    {
+        public DateTime Date { get; set; }
+
+        public string AdId { get; set; }
+
+        public long Impressions { get; set; }
+
+        public long UniqueUsers { get; set; }
     }
 }

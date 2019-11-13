@@ -20,6 +20,7 @@ namespace impression_rest_api
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    webBuilder.UseUrls(new[] { "http://0.0.0.0:5000" });
                     webBuilder.UseStartup<Startup>();
                 });
     }
