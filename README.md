@@ -9,8 +9,7 @@ Challange description is located [here](https://gist.github.com/anzebrvar/6b1377
 # Setup
 - `$ make up`             - Start Apache Spark cluster, MySQL database (with fake data) & REST API
 - `$ make scale n=3`      - Scale Apache Spark worker nodes
-- `$ make agg`            - Run Apache Spark Driver application to calculate aggregations
+
 
 # Other commands
-- `$ make gen`            - Generate few tousond impressions for current day
 - `$ make down`           - Stop Apache Spark cluster, MySQL database & REST API

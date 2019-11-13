@@ -1,76 +1,60 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import explode
-from pyspark.sql.functions import split
-from pyspark.sql.types import StructType
-from pyspark.sql.types import TimestampType
-from pyspark.sql.types import LongType
-from pyspark.sql.types import IntegerType
+from pyspark.sql import functions as fun
 
 spark = SparkSession \
     .builder \
     .appName("sandbox") \
     .getOrCreate()
 
+# Read structured stream from socket and apply schema
 lines = spark \
     .readStream \
     .format("socket") \
-    .option("host", "localhost") \
+    .option("host", "impressions-gen") \
     .option("port", 9999) \
     .load()
 
 inputDF = lines.selectExpr( \
-    "cast(nvl(split(value, ' ')[0], current_timestamp()) as timestamp) as timestamp", \
-    "cast(nvl(split(value, ' ')[1], 0) as long) as userId", \
-    "cast(nvl(split(value, ' ')[2], 0) as long) as campaignId", \
-    "cast(nvl(split(value, ' ')[3], 0) as long) as adId", \
-    "cast(nvl(split(value, ' ')[4], 0) as long) as impression", \
-    "cast(nvl(split(value, ' ')[5], 0) as long) as click", \
-    "cast(nvl(split(value, ' ')[6], 0) as long) as touch", \
-    "cast(nvl(split(value, ' ')[7], 0) as long) as swipe", \
-    "cast(nvl(split(value, ' ')[8], 0) as long) as pinch")
+    "cast(split(value, ' ')[0] as timestamp) as timestamp", \
+    "cast(split(value, ' ')[1] as long) as userId", \
+    "cast(split(value, ' ')[2] as long) as campaignId", \
+    "cast(split(value, ' ')[3] as long) as adId", \
+    "cast(split(value, ' ')[4] as long) as impression", \
+    "cast(split(value, ' ')[5] as long) as click", \
+    "cast(split(value, ' ')[6] as long) as touch", \
+    "cast(split(value, ' ')[7] as long) as swipe", \
+    "cast(split(value, ' ')[8] as long) as pinch")
 
-inputDF.printSchema()
-
-# Generate running word count
+# Prepare aggregation query
 windowedCounts = inputDF \
-    .groupBy("campaignId", "adId") \
-    .count()
+    .groupBy(fun.window("timestamp", "24 hour"), "campaignId", "userId") \
+    .agg( \
+        fun.sum("impression").alias("impressions"), \
+        fun.sum("click").alias("clicks"), \
+        fun.sum("touch").alias("touches"), \
+        fun.sum("swipe").alias("swipes"), \
+        fun.sum("pinch").alias("pinches"), \
+        fun.approx_count_distinct("userId").alias("uniqueUsers") \
+    ) \
+    .select(fun.col("window.start").cast("date").alias("date"), "*") \
+    .drop("window")
 
+windowedCounts = windowedCounts \
+    .withColumn("interactions", sum([windowedCounts["touches"], windowedCounts["swipes"], windowedCounts["pinches"]]))
+
+windowedCounts = windowedCounts \
+    .withColumn("impressions", sum([windowedCounts["impressions"], windowedCounts["interactions"]]))
+
+# Start the stream, output only changed rows, trigger every minute
 query = windowedCounts \
     .writeStream \
-    .outputMode("complete") \
+    .outputMode("update") \
     .format("console") \
     .start()
 
+    # TODO: this doens't work
+    # .trigger(continuous="60 seconds") \
+
+    # TODO: write cusom sink for MySQL database, upsert records
+
 query.awaitTermination()
-
-# def parse_to_pair(line: str):
-#     try:
-#         tokens = tuple(map(int, line.split(" ")))
-        
-#         key = (tokens[2], tokens[3])
-#         user = tokens[1]
-#         timestamp = tokens[0]
-#         metrics = {
-#             0: (user, 1, 0, 0, 0, 0), # impression
-#             1: (user, 0, 1, 0, 0, 0), # click
-#             2: (user, 0, 0, 1, 0, 0), # pinch
-#             3: (user, 0, 0, 0, 1, 0), # swipe
-#             4: (user, 0, 0, 0, 0, 1)  # touch
-#         }
-
-#         metric = metrics.get(tokens[4], metrics[0])[1:] # remove user data
-
-#         return [(key, metric)]
-#     except:
-#         return []
-
-
-# impressions = lines.flatMap(parse_to_pair)
-
-# impressionsAgg = impressions.reduceByKey(lambda a, b: tuple(sum(pair) for pair in zip(a, b)))
-
-# impressionsAgg.pprint()
-
-# ssc.start()
-# ssc.awaitTermination()

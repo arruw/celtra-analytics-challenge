@@ -15,3 +15,13 @@ services:
       - spark-master
     environment:
       - SPARK_MASTER=spark://spark-master:7077
+
+  impressions-gen:
+    build: services/impression-tcp-gen
+    restart: always
+
+  impressions-agg:
+    build: services/impression-agg
+    restart: always
+    depends_on:
+      - impressions-gen

@@ -3,7 +3,7 @@ import time
 import random
 import datetime
 
-host = 'localhost'
+host = ''
 port = 9999
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((host, port))
@@ -37,7 +37,7 @@ try:
         try:
             while True:
                 conn.send(bytes(generateImpression(10, 20, 100, 5), "utf-8"))
-                time.sleep(0.2)
+                time.sleep(0.05)
             conn.close()
         except socket.error:
             print("Error")
