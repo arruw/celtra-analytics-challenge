@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,7 +31,7 @@ namespace impression_rest_api
             services.AddControllers()
                 .AddJsonOptions(opts => {
                     opts.JsonSerializerOptions.IgnoreNullValues = true;
-                    opts.JsonSerializerOptions.WriteIndented = false;
+                    opts.JsonSerializerOptions.WriteIndented = true;
                 });
         }
 
@@ -44,8 +42,6 @@ namespace impression_rest_api
             {
                 app.UseDeveloperExceptionPage();
             }
-
-            app.UseHttpsRedirection();
 
             app.UseRouting();
 

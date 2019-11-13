@@ -1,4 +1,5 @@
 up:
+	docker volume create celtra_db
 	docker-compose up -d
 
 scale:
@@ -7,10 +8,5 @@ scale:
 down:
 	docker-compose down
 
-agg:
-	docker build -t impression-agg services/impression-agg
-	docker run --network celtra_default --env-file .env impression-agg
-
-gen:
-	docker build -t impression-gen services/impression-gen
-	docker run --network celtra_default --env-file .env impression-gen $(days)
+clean:
+	docker volume rm celtra_db
