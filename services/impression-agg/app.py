@@ -1,9 +1,13 @@
+from typing import Iterator
 from pyspark.sql import SparkSession
+from pyspark.sql import DataFrame
 from pyspark.sql import functions as fun
+from pyspark.sql import Row
+from mysqlsink import processBatch as mysqlSink
 
 spark = SparkSession \
     .builder \
-    .appName("sandbox") \
+    .appName("snadbox") \
     .getOrCreate()
 
 # Read structured stream from socket and apply schema
@@ -27,7 +31,8 @@ inputDF = lines.selectExpr( \
 
 # Prepare aggregation query
 windowedCounts = inputDF \
-    .groupBy(fun.window("timestamp", "24 hour"), "campaignId", "userId") \
+    .withWatermark("timestamp", "1 hour") \
+    .groupBy(fun.window("timestamp", "24 hour"), "campaignId", "adId") \
     .agg( \
         fun.sum("impression").alias("impressions"), \
         fun.sum("click").alias("clicks"), \
@@ -45,16 +50,14 @@ windowedCounts = windowedCounts \
 windowedCounts = windowedCounts \
     .withColumn("impressions", sum([windowedCounts["impressions"], windowedCounts["interactions"]]))
 
-# Start the stream, output only changed rows, trigger every minute
+# Start the stream, sink changed rows to MySQL database, trigger every 1 minute
 query = windowedCounts \
     .writeStream \
+    .foreachBatch(mysqlSink) \
     .outputMode("update") \
-    .format("console") \
     .start()
 
     # TODO: this doens't work
     # .trigger(continuous="60 seconds") \
-
-    # TODO: write cusom sink for MySQL database, upsert records
 
 query.awaitTermination()

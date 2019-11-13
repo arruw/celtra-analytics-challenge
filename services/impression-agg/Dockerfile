@@ -1,4 +1,4 @@
-FROM bde2020/spark-submit:2.4.1-hadoop2.7
+FROM bde2020/spark-submit:2.4.4-hadoop2.7
 
 ENV ENABLE_INIT_DAEMON=false
 
@@ -10,5 +10,6 @@ RUN wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.
     && rm mysql-connector-java-8.0.18.tar.gz
 
 COPY app.py /app/app.py
+COPY mysqlsink.py /app/mysqlsink.py
 
-ENV SPARK_SUBMIT_ARGS="--driver-class-path mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar --jars mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar"
+ENV SPARK_SUBMIT_ARGS='--driver-class-path mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar --jars mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar'
