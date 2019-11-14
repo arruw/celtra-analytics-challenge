@@ -57,5 +57,6 @@ curl http://localhost:8080/api/campaigns/ads/lastweek
 ```
 
 # TODOs
-- Add unit tests
+- Split driver program into smaller functions
 - Move hard coded configurations to environment variables
+- Add unit tests
