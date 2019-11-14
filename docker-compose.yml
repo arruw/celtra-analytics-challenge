@@ -27,7 +27,8 @@ services:
       - MYSQL_ROOT_PASSWORD=Password123!
       - MYSQL_DATABASE=ads
     volumes:
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ./schema.sql:/docker-entrypoint-initdb.d/0_schema.sql:ro
+      - ./data.sql:/docker-entrypoint-initdb.d/1_data.sql:ro
       - celtra_db:/var/lib/mysql
 
   impressions-api:
